@@ -5,6 +5,7 @@ class Custom_Array {
 	T* A;
 	int size;
 	int length;
+	T* undo;                          //first index is start,second index is end/length and rest is the actual array
 public:
 	Custom_Array(int = 0);		      // Default Parameterized Constructor -O(1)
 	~Custom_Array();				  // Destructor -O(1)
@@ -32,6 +33,8 @@ public:
 	void rightRotate();				  // To shift all elements to the right and put last element in first index -O(n)
 	bool check_sorted();		      // To check if an array is sorted -O(n)
 	void move_neg_left();			  // To move all negative numbers to left side -O(n)
+	void Undo();                      // If there is data in undo then it will revert arr to prior data form -O(n)
+	void replace(int, Custom_Array<T>&);				// To replace a part of array with another array -O(n)
 	Custom_Array<T>* merge(Custom_Array<T>&);			//To merge two unsorted arrays into a new array -O(m+n)
 	Custom_Array<T>* srt_merge(Custom_Array<T>&);		//To merge two sorted arrays into a new sorted array -O(m+n)
 	Custom_Array<T>* Union(Custom_Array<T>&);			//To find the union between two non sorted arrays -O(n^2) 
@@ -48,16 +51,16 @@ int main() {
 	arr1.push_back(4);
 	arr1.push_back(6);
 	arr1.push_back(10);
+	arr1.push_back(23);
 	arr2.push_back(3);
 	arr2.push_back(4);
 	arr2.push_back(6);
-	arr2.push_back(11);
-	arr2.push_back(12);
-	Custom_Array<int>* arr3 = nullptr;
-	arr3 = arr1.srt_difference(arr2);
-	arr3->display();
-	delete arr3;
-	arr3 = nullptr;
+	arr1.display();
+	arr1.replace(2,arr2);
+	arr1.display();
+	arr1.Undo();
+	arr1.display();
+
 	return 0;
 }
 
@@ -89,6 +92,23 @@ void Custom_Array<T>::set(int index, T element) {
 	}
 	else {
 		std::cerr << "Subscript out of range!!!!\n";
+	}
+}
+
+template<class T>
+void Custom_Array<T>::replace(int index, Custom_Array<T>& arr){
+	if (arr.length > this->length) {
+		std::cerr << "Array subscript out of range!!\n";
+	}
+	else {
+		undo = new T[arr.length + 2];
+		int j = 0;
+		for (int i = index; i < this->length; i++,j++) {  // -n
+			undo[j+2] = this->A[i];
+			this->A[i] = arr.A[j];
+		}
+		undo[0] = index;
+		undo[1] = arr.length;
 	}
 }
 
@@ -221,6 +241,28 @@ void Custom_Array<T>::move_neg_left()
 		}
 	}
 }
+
+template<class T>
+void Custom_Array<T>::Undo()
+{
+	if (undo != nullptr) {
+		if(undo[1]>this->size){
+			std::cerr << "The array is to small to undo!!!\n";
+		}
+		else {
+			for (int i = undo[0],j=2; i < undo[1] + undo[0]; i++) {
+				this->A[i] = undo[j++];
+			}
+			delete[] undo;
+			undo = nullptr;
+		}
+	}
+	else {
+		std::cerr << "There is nothin to undo!!!\n";
+	}
+}
+
+
 
 template<class T>
 Custom_Array<T>* Custom_Array<T>::merge(Custom_Array<T>& arr)
@@ -392,11 +434,13 @@ Custom_Array<T>::Custom_Array(int size) {
 		this->size = 0;
 		this->length = 0;
 		this->A = nullptr;
+		this->undo = nullptr;
 	}
 	else {
 		this->size = size;
 		this->length = 0;
 		this->A = new T[size];
+		this->undo = nullptr;
 	}
 }
 
@@ -405,6 +449,11 @@ Custom_Array<T>::~Custom_Array() {
 	if (this->A != nullptr) {
 		this->size = this->length = 0;
 		delete[] this->A;
+		A = nullptr;
+	}
+	if (this->undo != nullptr) {
+		delete[] this->undo;
+		undo = nullptr;
 	}
 }
 
